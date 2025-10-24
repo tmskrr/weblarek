@@ -1,15 +1,11 @@
 import { IProduct } from '../../types/index';
 
 export class CartModel {
-  constructor() {
-    this.items = [];
-  }
-
   // товары в корзине
-  items;
+  private items: IProduct[] = [];
 
   // добавить товар
-  add(product) {
+  add(product: IProduct): void {
     const existing = this.items.find((item) => item.id === product.id);
     if (!existing) {
       this.items.push(product);
@@ -17,30 +13,30 @@ export class CartModel {
   }
 
   // удалить товар
-  remove(productId) {
+  remove(productId: string): void {
     this.items = this.items.filter((item) => item.id !== productId);
   }
 
   // очистить корзину
-  clear() {
+  clear(): void {
     this.items = [];
   }
 
   // получить все товары
-  getItems() {
+  getItems(): IProduct[] {
     return this.items;
   }
 
   // получить количество товаров
-  getCount() {
+  getCount(): number {
     return this.items.length;
   }
 
   // посчитать общую сумму
-  getTotal() {
+  getTotal(): number {
     let total = 0;
     for (const item of this.items) {
-      if (item.price) {
+      if (typeof item.price === 'number') {
         total += item.price;
       }
     }

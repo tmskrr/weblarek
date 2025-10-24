@@ -1,39 +1,31 @@
-import { IProduct } from '../../types/index';
+import { IProduct } from '../../types';
 
 export class CatalogModel {
-  constructor() {
-    this.products = [];
-    this.previewProduct = null;
-  }
+  private products: IProduct[] = [];
+  private previewId?: string;
 
-  // массив всех товаров
-  products;
-
-  // выбранный товар для просмотра
-  previewProduct;
-
-  // сохранить товары
-  setProducts(items) {
+  // сохранить массив
+  setProducts(items: IProduct[]): void {
     this.products = items;
   }
 
-  // получить все товары
-  getProducts() {
+  // отдать весь массив
+  getProducts(): IProduct[] {
     return this.products;
   }
 
-  // получить товар по id
-  getById(id) {
-    return this.products.find((item) => item.id === id);
+  // найти по id
+  getById(id: string): IProduct | undefined {
+    return this.products.find((p) => p.id === id);
   }
 
-  // установить выбранный товар
-  setPreview(id) {
-    this.previewProduct = this.getById(id);
+  // сохранить id выбранного товара (или снять выбор)
+  setPreview(id?: string): void {
+    this.previewId = id;
   }
 
-  // получить выбранный товар
-  getPreview() {
-    return this.previewProduct;
+  // получить выбранный товар (или undefined)
+  getPreview(): IProduct | undefined {
+    return this.previewId ? this.getById(this.previewId) : undefined;
   }
 }
