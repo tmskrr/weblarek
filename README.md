@@ -98,3 +98,183 @@ Presenter - презентер содержит основную логику п
 `emit<T extends object>(event: string, data?: T): void` - инициализация события. При вызове события в метод передается название события и объект с данными, который будет использован как аргумент для вызова обработчика.  
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
+##### Данные
+Переменные окружения и константы
+
+Файл .env:
+
+VITE_API_ORIGIN=https://larek-api.nomoreparties.co
+src/utils/constants.ts:
+API_URL = ${VITE_API_ORIGIN}/api/weblarek — базовый адрес API.
+CDN_URL = ${VITE_API_ORIGIN}/content/weblarek — базовый адрес CDN для картинок.
+categoryMap — соответствия категорий модификаторам для UI.
+
+Типы данных
+
+src/types/index.ts содержит инфраструктурные типы для работы с API:
+
+export type ApiPostMethods = 'POST' | 'PUT' | 'DELETE';
+
+export interface IApi {
+  get<T extends object>(uri: string): Promise<T>;
+  post<T extends object>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
+}
+
+
+Доменные интерфейсы, используемые в приложении:
+
+export type TPayment = 'card' | 'cash';
+
+export interface IProduct {
+  id: string;
+  description: string;
+  image: string;            // имя файла; полный URL = CDN_URL + image
+  title: string;
+  category: string;
+  price: number | null;     // null => товар недоступен к покупке
+}
+
+export interface IBuyer {
+  payment: TPayment;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+export interface ICartItem {
+  productId: string;
+  qty: number;
+}
+
+export interface IOrderRequest {
+  items: ICartItem[];
+  customer: IBuyer;
+}
+
+export interface IValidationErrors {
+  payment?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}
+
+
+Пример реальных данных товара (см. src/utils/data.ts):
+
+{
+  "id": "854cef69-976d-4c2a-a18c-2aa45046c390",
+  "description": "Если планируете решать задачи в тренажёре, берите два.",
+  "image": "/5_Dots.svg",
+  "title": "+1 час в сутках",
+  "category": "софт-скил",
+  "price": 750
+}
+
+###### Модели данных
+
+Ниже описаны модели слоя Model (данные и операции над ними). Они изолированы, каждая отвечает строго за свою задачу.
+
+CatalogModel
+
+Назначение: хранение каталога товаров и выбранного товара для детального просмотра.
+
+Поля:
+
+products: IProduct[] — список всех товаров.
+
+previewId?: string — id товара, выбранного для предпросмотра.
+
+Методы:
+
+setProducts(list: IProduct[]): void — сохранить массив товаров.
+
+getProducts(): IProduct[] — получить весь каталог.
+
+getById(id: string): IProduct | undefined — получить товар по id.
+
+setPreview(id?: string): void — выбрать товар для предпросмотра (или снять выбор).
+
+getPreview(): IProduct | undefined — получить текущий товар предпросмотра.
+
+События (через EventEmitter):
+
+catalog:changed — обновился список товаров.
+
+catalog:preview — выбран товар для предпросмотра.
+
+CartModel
+
+Назначение: хранение выбранных пользователем товаров и расчёт агрегатов корзины.
+
+Поля:
+
+items: ICartItem[] — содержимое корзины (productId, qty).
+
+Методы:
+
+getItems(): ICartItem[] — получить позиции корзины.
+
+add(productId: string, qty = 1): void — добавить товар.
+
+remove(productId: string): void — удалить товар.
+
+clear(): void — очистить корзину.
+
+getCount(): number — суммарное количество единиц товара.
+
+getTotalPrice(products: IProduct[]): number — итоговая стоимость.
+
+has(productId: string): boolean — проверка наличия товара в корзине.
+
+События:
+
+cart:changed — корзина изменилась.
+
+BuyerModel
+
+Назначение: хранение данных покупателя и их валидация.
+
+Поля:
+
+payment?: TPayment
+
+email?: string
+
+phone?: string
+
+address?: string
+
+Методы:
+
+patch(data: Partial<IBuyer>): void — частичное сохранение (можно записать одно поле без затирания остальных).
+
+get(): IBuyer — получить все данные покупателя.
+
+clear(): void — очистить данные.
+
+validate(): IValidationErrors — валидация полей по правилу «поле не пустое».
+Возвращает объект вида:
+
+{ payment?: '…', email?: '…', phone?: '…', address?: '…' }
+
+
+Ключ присутствует только у полей с ошибкой.
+
+События:
+
+buyer:changed — изменены данные покупателя.
+
+##### Слой коммуникации
+
+Класс `ShopApi` (src/components/services/ShopApi.ts) инкапсулирует работу с сервером и использует композицию с базовым классом `Api`.
+
+**Конструктор:**
+`constructor(http: IApi)` — принимает любой объект по интерфейсу `IApi`.
+
+**Методы:**
+- `getProducts(): Promise<IProduct[]>` — GET `/product/`, возвращает массив товаров.
+- `createOrder(payload: IOrderRequest): Promise<IOrderResponse>` — POST `/order/`, отправляет данные заказа.
+
+**Типы ответов:**
+- `IProductsResponse { total: number; items: IProduct[] }`
+- `IOrderResponse { id: string }`
