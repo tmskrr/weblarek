@@ -1,20 +1,21 @@
-import { IBuyer, TPayment, IValidationErrors } from '../../types/index';
+import { IBuyer, TPayment } from "../../types/index";
 
 export class BuyerModel {
+  // инициализация полей
   constructor() {
-    this.payment = '';
-    this.email = '';
-    this.phone = '';
-    this.address = '';
+    this.payment = "";
+    this.email = "";
+    this.phone = "";
+    this.address = "";
   }
 
-  // поля с явными типами
-  payment: TPayment | '';
+  // поля данных покупателя
+  payment: TPayment | "";
   email: string;
   phone: string;
   address: string;
 
-  // сохранить данные
+  // сохранить часть данных
   setData(data: Partial<IBuyer>): void {
     if (data.payment !== undefined) this.payment = data.payment;
     if (data.email !== undefined) this.email = data.email;
@@ -22,7 +23,7 @@ export class BuyerModel {
     if (data.address !== undefined) this.address = data.address;
   }
 
-  // получить все данные
+  // получить весь набор данных
   getData(): Partial<IBuyer> {
     return {
       payment: this.payment || undefined,
@@ -32,21 +33,11 @@ export class BuyerModel {
     };
   }
 
-  // очистить все данные
+  // очистить данные покупателя
   clear(): void {
-    this.payment = '';
-    this.email = '';
-    this.phone = '';
-    this.address = '';
-  }
-
-  // валидация
-  validate(): IValidationErrors {
-    const errors: IValidationErrors = {};
-    if (!this.payment) errors.payment = 'Не выбран способ оплаты';
-    if (!this.email) errors.email = 'Введите email';
-    if (!this.phone) errors.phone = 'Введите телефон';
-    if (!this.address) errors.address = 'Введите адрес';
-    return errors;
+    this.payment = "";
+    this.email = "";
+    this.phone = "";
+    this.address = "";
   }
 }

@@ -1,25 +1,46 @@
-import { IProduct } from '../../types/index';
+import { IProduct } from "../../types/index";
+import { IEvents } from "../base/Events";
 
 export class CartModel {
   // товары в корзине
   private items: IProduct[] = [];
+
+  constructor(private events: IEvents) {}
 
   // добавить товар
   add(product: IProduct): void {
     const existing = this.items.find((item) => item.id === product.id);
     if (!existing) {
       this.items.push(product);
+
+      // уведомляем
+      this.events.emit("cart:changed", {
+        items: this.items,
+        total: this.getTotal(),
+        count: this.getCount(),
+      });
     }
   }
 
   // удалить товар
   remove(productId: string): void {
     this.items = this.items.filter((item) => item.id !== productId);
+    this.events.emit("cart:changed", {
+      items: this.items,
+      total: this.getTotal(),
+      count: this.getCount(),
+    });
   }
 
   // очистить корзину
   clear(): void {
     this.items = [];
+
+    this.events.emit("cart:changed", {
+      items: this.items,
+      total: 0,
+      count: 0,
+    });
   }
 
   // получить все товары
@@ -36,7 +57,7 @@ export class CartModel {
   getTotal(): number {
     let total = 0;
     for (const item of this.items) {
-      if (typeof item.price === 'number') {
+      if (typeof item.price === "number") {
         total += item.price;
       }
     }

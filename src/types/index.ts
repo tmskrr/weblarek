@@ -1,11 +1,15 @@
-export type ApiPostMethods = 'POST' | 'PUT' | 'DELETE';
+export type ApiPostMethods = "POST" | "PUT" | "DELETE";
 
 export interface IApi {
-    get<T extends object>(uri: string): Promise<T>;
-    post<T extends object>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
+  get<T extends object>(uri: string): Promise<T>;
+  post<T extends object>(
+    uri: string,
+    data: object,
+    method?: ApiPostMethods
+  ): Promise<T>;
 }
 
-export type TPayment = 'card' | 'cash';
+export type TPayment = "card" | "cash";
 
 export interface IProduct {
   id: string;
@@ -33,7 +37,7 @@ export interface IOrderRequest {
   customer: IBuyer;
 }
 
-// Ошибки валидации покупателя: ключ присутствует только у невалидных полей //
+// ошибки валидации покупателя: ключ присутствует только у невалидных полей //
 export interface IValidationErrors {
   payment?: string;
   email?: string;
@@ -42,10 +46,30 @@ export interface IValidationErrors {
 }
 
 export interface IProductsResponse {
-    total: number;
-items: IProduct[];
+  total: number;
+  items: IProduct[];
 }
 
 export interface IOrderResponse {
-    id: string;
+  id: string;
 }
+
+// рендер каталога: создаём карточки и отображаем их в Gallery
+events.on("catalog:changed", () => {
+  const itemCards = productsModel.getItems().map((item) => {
+    const card = new CardCatalog(cloneTemplate(cardCatalogTemplate), {
+      onClick: () => events.emit("card:select", item),
+    });
+
+    return card.render(item);
+  });
+
+  gallery.render({ catalog: itemCards });
+});
+
+larekApi
+  .getProductList()
+  .then((data) => {
+    productsModel.setItems(data.items);
+  })
+  .catch((err) => console.error(err));
