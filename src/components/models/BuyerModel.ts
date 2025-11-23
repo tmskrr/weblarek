@@ -1,19 +1,18 @@
-import { IBuyer, TPayment } from "../../types/index";
+import { IBuyer, TPayment, IValidationErrors } from "../../types/index";
+import { IEvents } from "../base/Events";
 
 export class BuyerModel {
-  // инициализация полей
-  constructor() {
+  payment: TPayment | "";
+  email: string;
+  phone: string;
+  address: string;
+
+  constructor(private events: IEvents) {
     this.payment = "";
     this.email = "";
     this.phone = "";
     this.address = "";
   }
-
-  // поля данных покупателя
-  payment: TPayment | "";
-  email: string;
-  phone: string;
-  address: string;
 
   // сохранить часть данных
   setData(data: Partial<IBuyer>): void {
@@ -21,6 +20,8 @@ export class BuyerModel {
     if (data.email !== undefined) this.email = data.email;
     if (data.phone !== undefined) this.phone = data.phone;
     if (data.address !== undefined) this.address = data.address;
+
+    this.events.emit("buyer:changed", this.getData());
   }
 
   // получить весь набор данных
@@ -39,5 +40,20 @@ export class BuyerModel {
     this.email = "";
     this.phone = "";
     this.address = "";
+
+    this.events.emit("buyer:changed", this.getData());
+  }
+
+  // валидация
+
+  validate(): IValidationErrors {
+    const errors: IValidationErrors = {};
+
+    if (!this.payment) errors.payment = "Не выбран способ оплаты";
+    if (!this.address) errors.address = "Введите адрес";
+    if (!this.email) errors.email = "Введите email";
+    if (!this.phone) errors.phone = "Введите телефон";
+
+    return errors;
   }
 }

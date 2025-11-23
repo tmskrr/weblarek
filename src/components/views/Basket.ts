@@ -50,4 +50,13 @@ export class Basket extends Component<IBasket> {
   set total(value: number) {
     this.totalElement.textContent = `${value} синапсов`;
   }
+
+  set empty(isEmpty: boolean) {
+    if (isEmpty) {
+      this.listElement.innerHTML = "<p>Корзина пуста</p>";
+      this.buttonElement.disabled = true;
+    } else {
+      this.buttonElement.disabled = false;
+    }
+  }
 }

@@ -1,3 +1,7 @@
+/* Сергей, спасибо большое за ваши комментарии!
+Постаралась учесть.
+*/
+
 import "./scss/styles.scss";
 
 import { Api } from "./components/base/Api";
@@ -30,7 +34,7 @@ const events = new Events();
 // модели
 const catalog = new CatalogModel(events);
 const cart = new CartModel(events);
-const buyer = new BuyerModel();
+const buyer = new BuyerModel(events);
 
 // api
 const http = new Api(API_URL, {
@@ -44,7 +48,6 @@ const gallery = new Gallery(ensureElement(".gallery"));
 const modal = new Modal(events, ensureElement("#modal-container"));
 
 // шаблоны
-
 const tplCatalog = ensureElement<HTMLTemplateElement>("#card-catalog");
 const tplPreview = ensureElement<HTMLTemplateElement>("#card-preview");
 const tplBasketItem = ensureElement<HTMLTemplateElement>("#card-basket");
@@ -53,19 +56,17 @@ const tplOrder = ensureElement<HTMLTemplateElement>("#order");
 const tplContacts = ensureElement<HTMLTemplateElement>("#contacts");
 const tplSuccess = ensureElement<HTMLTemplateElement>("#success");
 
-// закрыть модалку
-events.on("modal:close", () => {
+// запрос на закрытие модалки
+events.on("modal:request-close", () => {
   modal.close();
 });
 
-// каталог обновился → отрисовать карточки
+// каталог
 events.on("catalog:changed", ({ items }) => {
   const cards = items.map((product) => {
     const node = cloneTemplate(tplCatalog);
     const card = new CardCatalog(node, {
-      onClick: () => {
-        catalog.setPreview(product.id);
-      },
+      onClick: () => catalog.setPreview(product.id),
     });
     return card.render(product);
   });
@@ -73,9 +74,9 @@ events.on("catalog:changed", ({ items }) => {
   gallery.items = cards;
 });
 
-// выбран товар → открыть превью
-events.on("catalog:preview", ({ id }) => {
-  const product = catalog.getById(id);
+// открыть превью
+events.on("catalog:preview", () => {
+  const product = catalog.getPreview();
   if (!product) return;
 
   const node = cloneTemplate(tplPreview);
@@ -91,14 +92,16 @@ events.on("catalog:preview", ({ id }) => {
   modal.open();
 });
 
-// корзина изменилась
-events.on("cart:changed", ({ items, total, count }) => {
-  header.counter = count;
+// корзина
+events.on("cart:changed", () => {
+  header.counter = cart.getCount();
 
-  // если открыта корзина — перерисовать
-  if (modal.current === "basket") {
-    renderBasket(items, total);
-  }
+  // если корзина открыта → обновить
+  const basketEl = modal.container.querySelector(".basket");
+  if (!basketEl) return;
+
+  const basket = new Basket(basketEl, events);
+  renderBasket(basket);
 });
 
 // открыть корзину
@@ -107,30 +110,29 @@ events.on("basket:open", () => {
   const basket = new Basket(node, events);
 
   modal.content = basket.render({});
-  modal.open("basket");
+  modal.open();
 
-  renderBasket(cart.getItems(), cart.getTotal());
+  renderBasket(basket);
 });
 
-// добавить товар из превью
+// действие из превью
 events.on("product:add", ({ id }) => {
   const product = catalog.getById(id);
   if (product) cart.add(product);
   modal.close();
 });
 
-// удалить товар из превью
 events.on("product:remove", ({ id }) => {
   cart.remove(id);
   modal.close();
 });
 
-// удалить товар из корзины
+// удалить из корзины
 events.on("cart:item:remove", ({ id }) => {
   cart.remove(id);
 });
 
-// нажали оформить
+// оформление
 events.on("cart:checkout", () => {
   const node = cloneTemplate(tplOrder);
   const order = new Order(node, events);
@@ -147,23 +149,30 @@ events.on("order:address", ({ address }) => {
   buyer.setData({ address });
 });
 
-// submit формы Order → перейти к Contacts
+// Order → Contacts
 events.on("order:submit", () => {
   const node = cloneTemplate(tplContacts);
   const contacts = new Contacts(node, events);
   modal.content = contacts.render({});
 });
 
-// ввод email / phone
-events.on("contacts:email", ({ email }) => {
-  buyer.setData({ email });
-});
+// ввод email/phone → передаём в buyer
+events.on("contacts:email", ({ email }) => buyer.setData({ email }));
+events.on("contacts:phone", ({ phone }) => buyer.setData({ phone }));
 
-events.on("contacts:phone", ({ phone }) => {
-  buyer.setData({ phone });
-});
+// buyer поменялся → обновляем форму
+events.on("buyer:changed", () => {
+  const errors = buyer.validate();
+  const isValid = !errors.email && !errors.phone;
 
-// отправка Contacts → отправляем заказ
+  const formEl = modal.container.querySelector("form[name='contacts']");
+  if (formEl) {
+    const contacts = new Contacts(formEl as HTMLFormElement, events);
+    contacts.valid = isValid;
+    contacts.error = isValid ? "" : "Заполните email и телефон";
+  }
+});
+// submit Contacts → заказ
 events.on("contacts:submit", () => {
   const data = {
     ...buyer.getData(),
@@ -184,37 +193,22 @@ events.on("contacts:submit", () => {
 });
 
 // закрыть success
-events.on("success:close", () => {
-  modal.close();
-});
+events.on("success:close", () => modal.close());
 
-// функция рендера корзины //
-function renderBasket(items, total) {
-  const list = modal.container.querySelector(".basket__list");
-  const price = modal.container.querySelector(".basket__price");
-  const button = modal.container.querySelector(".basket__button");
+// рендер корзины
+function renderBasket(basket: Basket) {
+  const items = cart.getItems();
 
-  if (!list || !price || !button) return;
+  const cards = items.map((product, index) => {
+    const node = cloneTemplate(tplBasketItem);
+    const card = new CardBasket(node, events);
+    return card.render({ ...product, index: index + 1 });
+  });
 
-  list.innerHTML = "";
-
-  if (items.length === 0) {
-    list.innerHTML = `<p>Корзина пуста</p>`;
-    button.setAttribute("disabled", "");
-  } else {
-    items.forEach((product, index) => {
-      const node = cloneTemplate(tplBasketItem);
-      const itemCard = new CardBasket(node, events);
-      list.append(itemCard.render({ ...product, index: index + 1 }));
-    });
-
-    button.removeAttribute("disabled");
-  }
-
-  price.textContent = `${total} синапсов`;
+  basket.items = cards;
+  basket.total = cart.getTotal();
+  basket.empty = cards.length === 0;
 }
 
-// загрузка каталога //
-api.getProducts().then((list) => {
-  catalog.setProducts(list);
-});
+// запускаем
+api.getProducts().then((list) => catalog.setProducts(list));

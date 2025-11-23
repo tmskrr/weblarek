@@ -11,6 +11,7 @@ import { IProduct } from "../../../types";
 
 // родительский класс карточек
 export class Card<T extends Partial<IProduct>> extends Component<T> {
+  public id?: string;
   protected titleElement?: HTMLElement;
   protected priceElement?: HTMLElement;
 
@@ -34,17 +35,5 @@ export class Card<T extends Partial<IProduct>> extends Component<T> {
     if (this.priceElement) {
       this.priceElement.textContent = value === null ? "" : `${value} синапсов`;
     }
-  }
-
-  // метод вставки изображения
-  protected setImage(img: HTMLImageElement, src: string, alt?: string) {
-    img.src = src;
-    if (alt) img.alt = alt;
-  }
-
-  // общий render для всех карточек
-  render(data: Partial<T>): HTMLElement {
-    super.render(data);
-    return this.container;
   }
 }

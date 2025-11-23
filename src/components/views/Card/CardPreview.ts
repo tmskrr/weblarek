@@ -19,7 +19,9 @@ export class CardPreview extends Card<IProduct> {
   protected categoryElement: HTMLElement;
   protected descriptionElement: HTMLElement;
   protected buttonElement: HTMLButtonElement;
-  protected productId: string;
+
+  protected productId = "";
+  protected isInCart = false;
 
   constructor(
     container: HTMLElement,
@@ -27,26 +29,24 @@ export class CardPreview extends Card<IProduct> {
   ) {
     super(container);
 
-    this.imageElement = ensureElement<HTMLImageElement>(
-      ".card__image",
-      this.container
-    );
-    this.categoryElement = ensureElement<HTMLElement>(
-      ".card__category",
-      this.container
-    );
-    this.descriptionElement = ensureElement<HTMLElement>(
-      ".card__text",
-      this.container
-    );
-    this.buttonElement = ensureElement<HTMLButtonElement>(
-      ".card__button",
-      this.container
-    );
+    this.imageElement = ensureElement(".card__image", this.container);
+    this.categoryElement = ensureElement(".card__category", this.container);
+    this.descriptionElement = ensureElement(".card__text", this.container);
+    this.buttonElement = ensureElement(".card__button", this.container);
+
+    this.buttonElement.addEventListener("click", () => {
+      if (this.buttonElement.disabled) return;
+
+      this.events.emit(this.isInCart ? "product:remove" : "product:add", {
+        id: this.productId,
+      });
+    });
   }
 
   render(data: IProduct & { inCart: boolean }) {
     this.productId = data.id;
+    this.isInCart = data.inCart;
+
     return super.render(data);
   }
 
@@ -70,24 +70,27 @@ export class CardPreview extends Card<IProduct> {
   }
 
   set price(value: number | null) {
-    super.price = value;
     if (value === null) {
+      // полностью недоступный товар
+      this.priceElement.textContent = "Бесценно";
       this.buttonElement.disabled = true;
       this.buttonElement.textContent = "Недоступно";
+      this.buttonElement.classList.add("button_disabled");
+      return;
     }
+
+    // обычный товар
+    this.priceElement.textContent = `${value} синапсов`;
+    this.buttonElement.disabled = false;
+    this.buttonElement.classList.remove("button_disabled");
+    this.buttonElement.textContent = this.isInCart ? "Удалить" : "В корзину";
   }
 
   set inCart(value: boolean) {
-    if (value) {
-      this.buttonElement.textContent = "Удалить";
-      this.buttonElement.classList.add("card__button_remove");
-      this.buttonElement.onclick = () =>
-        this.events.emit("product:remove", { id: this.productId });
-    } else {
-      this.buttonElement.textContent = "В корзину";
-      this.buttonElement.classList.remove("card__button_remove");
-      this.buttonElement.onclick = () =>
-        this.events.emit("product:add", { id: this.productId });
+    this.isInCart = value;
+
+    if (!this.buttonElement.disabled) {
+      this.buttonElement.textContent = value ? "Удалить" : "В корзину";
     }
   }
 }

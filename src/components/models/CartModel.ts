@@ -7,40 +7,22 @@ export class CartModel {
 
   constructor(private events: IEvents) {}
 
-  // добавить товар
   add(product: IProduct): void {
-    const existing = this.items.find((item) => item.id === product.id);
+    const existing = this.items.find(item => item.id === product.id);
     if (!existing) {
       this.items.push(product);
-
-      // уведомляем
-      this.events.emit("cart:changed", {
-        items: this.items,
-        total: this.getTotal(),
-        count: this.getCount(),
-      });
+      this.events.emit("cart:changed");
     }
   }
-
-  // удалить товар
+  
   remove(productId: string): void {
-    this.items = this.items.filter((item) => item.id !== productId);
-    this.events.emit("cart:changed", {
-      items: this.items,
-      total: this.getTotal(),
-      count: this.getCount(),
-    });
+    this.items = this.items.filter(item => item.id !== productId);
+    this.events.emit("cart:changed");
   }
-
-  // очистить корзину
+  
   clear(): void {
     this.items = [];
-
-    this.events.emit("cart:changed", {
-      items: this.items,
-      total: 0,
-      count: 0,
-    });
+    this.events.emit("cart:changed");
   }
 
   // получить все товары

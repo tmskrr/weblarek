@@ -37,30 +37,15 @@ export class Contacts extends Form<IContacts> {
     );
   }
 
-  // обработчик submit из Form //
+  // обработчик submit из Form
   protected handleSubmit(): void {
     this.events.emit("contacts:submit");
   }
 
-  /** Обработчик input из Form */
-  protected handleInput(field: keyof IContacts, value: string): void {
-    if (field === "email") {
-        this.events.emit("contacts:email", { email: value });
-    }
-
-    if (field === "phone") {
-        this.events.emit("contacts:phone", { phone: value });
-    }
-
-    // условия валидности:
-    const emailOk = this.emailInput.value.trim().length > 0;
-    const phoneOk = this.phoneInput.value.trim().length > 0;
-
-    const valid = emailOk && phoneOk;
-    this.valid = valid;
-
-    this.error = valid ? "" : "Заполните email и телефон";
-}
+  // обработчик input из Form
+  protected handleInput(field: keyof IContacts, value: string) {
+    this.events.emit(`contacts:${field}`, { [field]: value });
+  }
 
   set email(value: string) {
     this.emailInput.value = value;

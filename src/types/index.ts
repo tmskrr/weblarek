@@ -37,7 +37,7 @@ export interface IOrderRequest {
   customer: IBuyer;
 }
 
-// ошибки валидации покупателя: ключ присутствует только у невалидных полей //
+// ошибки валидации покупателя: ключ присутствует только у невалидных полей
 export interface IValidationErrors {
   payment?: string;
   email?: string;

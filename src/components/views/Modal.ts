@@ -18,50 +18,42 @@ export class Modal extends Component<IModal> {
   protected closeButton: HTMLButtonElement;
   protected contentElement: HTMLElement;
 
-  public current: string | null = null;
-
   constructor(
     protected events: IEvents,
     container: HTMLElement
   ) {
     super(container);
 
-    this.events = events;
-
-    // находим кнопку закрытия модального окна
+    // кнопка закрытия
     this.closeButton = ensureElement<HTMLButtonElement>(
       ".modal__close",
       this.container
     );
 
-    // контейнер, в который вставляется содержимое модалки
+    // контейнер для контента
     this.contentElement = ensureElement<HTMLElement>(
       ".modal__content",
       this.container
     );
 
-    // клик по крестику → закрываем модалку
+    // закрыть по крестику
     this.closeButton.addEventListener("click", () => {
-      this.events.emit("modal:close");
+      this.events.emit("modal:request-close");
     });
 
-    // клик по фону → закрываем модалку
+    // закрыть по фону
     this.container.addEventListener("click", (event) => {
       if (event.target === this.container) {
-        this.events.emit("modal:close");
+        this.events.emit("modal:request-close");
       }
     });
   }
 
-  // открыть модалку
-  open(type?: string) {
-    this.current = type ?? null;
+  open() {
     this.container.classList.add("modal_active");
   }
 
-  // закрыть модалку
   close() {
-    this.current = null;
     this.container.classList.remove("modal_active");
     this.contentElement.innerHTML = "";
   }

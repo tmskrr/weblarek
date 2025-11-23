@@ -11,83 +11,77 @@ import { ensureElement } from "../../../utils/utils";
 import { IEvents } from "../../base/Events";
 
 export interface IOrder {
-    payment: string;
-    address: string;
+  payment: string;
+  address: string;
 }
 
 export class Order extends Form<IOrder> {
-    protected paymentButtons: NodeListOf<HTMLButtonElement>;
-    protected addressInput: HTMLInputElement;
+  protected paymentButtons: NodeListOf<HTMLButtonElement>;
+  protected addressInput: HTMLInputElement;
 
-    constructor(
-        container: HTMLFormElement,
-        protected events: IEvents
-    ) {
-        super(container);
+  constructor(
+    container: HTMLFormElement,
+    protected events: IEvents
+  ) {
+    super(container);
 
-        this.paymentButtons = container.querySelectorAll(".button_alt");
-        this.addressInput = ensureElement<HTMLInputElement>('input[name="address"]', container);
+    this.paymentButtons = container.querySelectorAll(".button_alt");
+    this.addressInput = ensureElement<HTMLInputElement>(
+      'input[name="address"]',
+      container
+    );
 
-        // нажали способ оплаты
-        this.paymentButtons.forEach(btn => {
-            btn.addEventListener("click", () => {
-                this.events.emit("order:payment", { method: btn.name });
-                this.payment = btn.name;
-                this.validate();
-            });
-        });
+    // выбор способа оплаты
+    this.paymentButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        this.events.emit("order:payment", { method: btn.name });
+        this.payment = btn.name;
+        this.validate();
+      });
+    });
+  }
+
+  // обработка ввода
+  protected handleInput(field: keyof IOrder, value: string): void {
+    if (field === "address") {
+      this.events.emit("order:address", { address: value });
+    }
+    this.validate();
+  }
+
+  protected handleSubmit(): void {
+    if (this.submitButton.disabled) return;
+    this.events.emit("order:submit");
+  }
+
+  // единая валидация
+  private validate() {
+    const addressOk = this.addressInput.value.trim().length > 0;
+    const paymentOk = [...this.paymentButtons].some((btn) =>
+      btn.classList.contains("button_alt-active")
+    );
+
+    if (!paymentOk && !addressOk) {
+      this.error = "Заполните адрес и выберите способ оплаты";
+    } else if (!paymentOk) {
+      this.error = "Выберите способ оплаты";
+    } else if (!addressOk) {
+      this.error = "Введите адрес доставки";
+    } else {
+      this.error = "";
     }
 
-    // === ОБЯЗАТЕЛЬНЫЕ методы === //
+    this.valid = paymentOk && addressOk;
+  }
 
-    protected handleInput(field: keyof IOrder, value: string): void {
-        // адрес всегда обновляется
-        if (field === "address") {
-            this.events.emit("order:address", { address: value });
-        }
-    
-        // условия активации кнопки:
-        // есть выбранный метод + непустой адрес
-        const paymentSelected = Array.from(this.paymentButtons)
-            .some(btn => btn.classList.contains("button_alt-active"));
-    
-        const valid = paymentSelected && this.addressInput.value.trim().length > 0;
-        this.valid = valid;
-    
-        // ошибок нет — очищаем
-        this.error = valid ? "" : "Заполните адрес и выберите оплату";
-    }
-    
+  // сеттеры
+  set payment(method: string) {
+    this.paymentButtons.forEach((btn) => {
+      btn.classList.toggle("button_alt-active", btn.name === method);
+    });
+  }
 
-    protected handleSubmit(): void {
-        // валидация
-        if (this.submitButton.disabled) return;
-        this.events.emit("order:submit");
-    }
-
-    // === Валидация формы === //
-    private validate() {
-        const addressOk = this.addressInput.value.trim().length > 0;
-        const paymentOk = [...this.paymentButtons].some(btn =>
-            btn.classList.contains("button_alt-active")
-        );
-
-        if (!paymentOk) this.error = "Выберите способ оплаты";
-        else if (!addressOk) this.error = "Введите адрес доставки";
-        else this.error = "";
-
-        this.valid = paymentOk && addressOk;
-    }
-
-    // === сеттеры для презентера === //
-
-    set payment(method: string) {
-        this.paymentButtons.forEach(btn => {
-            btn.classList.toggle("button_alt-active", btn.name === method);
-        });
-    }
-
-    set address(value: string) {
-        this.addressInput.value = value;
-    }
+  set address(value: string) {
+    this.addressInput.value = value;
+  }
 }
