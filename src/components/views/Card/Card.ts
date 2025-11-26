@@ -11,7 +11,6 @@ import { IProduct } from "../../../types";
 
 // родительский класс карточек
 export class Card<T extends Partial<IProduct>> extends Component<T> {
-  public id?: string;
   protected titleElement?: HTMLElement;
   protected priceElement?: HTMLElement;
 
@@ -33,7 +32,8 @@ export class Card<T extends Partial<IProduct>> extends Component<T> {
   // установка цены
   set price(value: number | null) {
     if (this.priceElement) {
-      this.priceElement.textContent = value === null ? "" : `${value} синапсов`;
+      this.priceElement.textContent = 
+        value === null ? "Бесценно" : `${value} синапсов`;
     }
   }
 }

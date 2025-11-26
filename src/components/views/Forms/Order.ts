@@ -34,47 +34,28 @@ export class Order extends Form<IOrder> {
     // выбор способа оплаты
     this.paymentButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
-        this.events.emit("order:payment", { method: btn.name });
-        this.payment = btn.name;
-        this.validate();
+        this.events.emit("order:payment", {
+          field: "payment",
+          value: btn.name,
+        });
       });
     });
   }
 
   // обработка ввода
   protected handleInput(field: keyof IOrder, value: string): void {
-    if (field === "address") {
-      this.events.emit("order:address", { address: value });
-    }
-    this.validate();
+    this.events.emit("order:address", {
+      field,
+      value,
+    });
   }
 
+  // пользователь нажал оформить
   protected handleSubmit(): void {
-    if (this.submitButton.disabled) return;
     this.events.emit("order:submit");
   }
 
-  // единая валидация
-  private validate() {
-    const addressOk = this.addressInput.value.trim().length > 0;
-    const paymentOk = [...this.paymentButtons].some((btn) =>
-      btn.classList.contains("button_alt-active")
-    );
-
-    if (!paymentOk && !addressOk) {
-      this.error = "Заполните адрес и выберите способ оплаты";
-    } else if (!paymentOk) {
-      this.error = "Выберите способ оплаты";
-    } else if (!addressOk) {
-      this.error = "Введите адрес доставки";
-    } else {
-      this.error = "";
-    }
-
-    this.valid = paymentOk && addressOk;
-  }
-
-  // сеттеры
+  // сеттеры для отображения — презентер вызовет render()
   set payment(method: string) {
     this.paymentButtons.forEach((btn) => {
       btn.classList.toggle("button_alt-active", btn.name === method);
@@ -83,5 +64,13 @@ export class Order extends Form<IOrder> {
 
   set address(value: string) {
     this.addressInput.value = value;
+  }
+
+  set error(value: string) {
+    super.error = value;
+  }
+
+  set valid(value: boolean) {
+    super.valid = value;
   }
 }

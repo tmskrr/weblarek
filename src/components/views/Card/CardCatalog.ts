@@ -59,12 +59,4 @@ export class CardCatalog extends Card<IProduct> {
       );
     }
   }
-
-  set price(value: number | null) {
-    if (value === null) {
-      this.priceElement.textContent = "Бесценно";
-    } else {
-      this.priceElement.textContent = `${value} синапсов`;
-    }
-  }
 }
